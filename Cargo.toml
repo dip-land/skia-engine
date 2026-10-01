@@ -18,6 +18,9 @@ keywords = ["graphics", "2d", "skia", "rendering", "canvas", "rsx", "jsx"]
 categories = ["graphics", "rendering::graphics-api", "multimedia::images"]
 
 [workspace.dependencies]
+skia-engine-core = { version = "0.1.0", path = "crates/core" }
+skia-engine-macro = { version = "0.1.0", path = "crates/macro" }
+
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "3.0", features = ["full", "extra-traits"] }

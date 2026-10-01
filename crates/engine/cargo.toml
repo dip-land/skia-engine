@@ -12,5 +12,5 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-skia-engine-core = { path = "../core" }
-skia-engine-macro = { path = "../macro" }
+skia-engine-core = { workspace = true }
+skia-engine-macro = { workspace = true }

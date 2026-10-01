@@ -15,7 +15,7 @@ categories.workspace = true
 proc-macro = true
 
 [dependencies]
-skia-engine-core = { path = "../core" }
+skia-engine-core = { workspace = true }
 
 quote = { workspace = true }
 skia-safe = { workspace = true }
