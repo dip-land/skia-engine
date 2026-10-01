@@ -1,0 +1,25 @@
+[workspace]
+members = [
+    "crates/core",
+    "crates/engine",
+    "crates/macro"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/dip-land/skia-engine"
+homepage = "https://github.com/dip-land/skia-engine"
+authors = ["dip-land", "Sebastain W."]
+rust-version = "1.85"
+keywords = ["graphics", "2d", "skia", "rendering", "canvas", "rsx", "jsx"]
+categories = ["graphics", "rendering::graphics-api", "multimedia::images"]
+
+[workspace.dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "3.0", features = ["full", "extra-traits"] }
+syn-rsx = "0.9.0"
+skia-safe = "0.153.3"

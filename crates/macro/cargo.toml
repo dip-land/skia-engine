@@ -1,0 +1,24 @@
+[package]
+name = "skia-engine-macro"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/skia-engine-macro"
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+skia-engine-core = { path = "../core" }
+
+quote = { workspace = true }
+skia-safe = { workspace = true }
+syn = { workspace = true }
+syn-rsx = { workspace = true }
+proc-macro2 = { workspace = true }

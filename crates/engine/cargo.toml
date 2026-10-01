@@ -1,0 +1,16 @@
+[package]
+name = "skia-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/skia-engine"
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+skia-engine-core = { path = "../core" }
+skia-engine-macro = { path = "../macro" }

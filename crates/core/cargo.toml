@@ -1,0 +1,15 @@
+[package]
+name = "skia-engine-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/skia-engine-core"
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+skia-safe = { workspace = true }
