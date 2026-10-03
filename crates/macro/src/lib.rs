@@ -26,7 +26,7 @@ fn expand_skia_ui_node(node: &parser::SkiaNodeInput) -> proc_macro2::TokenStream
     });
     let children = node.children.iter().map(expand_skia_ui_node).collect();
 
-    expand_element(&node.tag_name.to_string(), attributes, children)
+    expand_element(&node.tag_name.to_string(), attributes, children, None)
 }
 
 #[proc_macro]
@@ -78,13 +78,28 @@ fn expand_skia_rsx_node(node: &syn_rsx::Node) -> proc_macro2::TokenStream {
         .map(expand_skia_rsx_node)
         .collect();
 
-    expand_element(&element.name.to_string(), attributes, children)
+    let text_content = if element.name.to_string() == "Text" {
+        match extract_text_content(&element.children) {
+            Ok(content) => content,
+            Err(error) => return error.to_compile_error(),
+        }
+    } else {
+        None
+    };
+
+    expand_element(
+        &element.name.to_string(),
+        attributes,
+        children,
+        text_content,
+    )
 }
 
 fn expand_element(
     tag_name: &str,
     attributes: impl IntoIterator<Item = AttributeTokens>,
     children: Vec<proc_macro2::TokenStream>,
+    text_content: Option<proc_macro2::TokenStream>,
 ) -> proc_macro2::TokenStream {
     let properties = match ElementProperties::parse(attributes) {
         Ok(properties) => properties,
@@ -94,12 +109,47 @@ fn expand_element(
     match tag_name {
         "Container" => expand_container(properties, children),
         "Rect" => expand_rect(properties, children),
+        "Text" => expand_text(properties, children, text_content),
         _ => syn::Error::new(
             proc_macro2::Span::call_site(),
             format!("Unknown element tag: {tag_name}"),
         )
         .to_compile_error(),
     }
+}
+
+fn extract_text_content(
+    children: &[syn_rsx::Node],
+) -> syn::Result<Option<proc_macro2::TokenStream>> {
+    let mut content = String::new();
+    let mut found_text = false;
+
+    for child in children {
+        match child {
+            syn_rsx::Node::Text(text) => {
+                let value = String::try_from(&text.value).map_err(|_| {
+                    syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        "Text element content must be a string literal",
+                    )
+                })?;
+                content.push_str(&value);
+                found_text = true;
+            }
+            syn_rsx::Node::Comment(_) => {}
+            _ => {
+                return Err(syn::Error::new(
+                    proc_macro2::Span::call_site(),
+                    "Text elements may only contain string literal text",
+                ));
+            }
+        }
+    }
+
+    Ok(found_text.then(|| {
+        let literal = syn::LitStr::new(&content, proc_macro2::Span::call_site());
+        quote! { #literal }
+    }))
 }
 
 #[derive(Default)]
@@ -113,6 +163,14 @@ struct ElementProperties {
     horizontal_alignment: Option<proc_macro2::TokenStream>,
     background_color: Option<proc_macro2::TokenStream>,
     border_radius: Option<proc_macro2::TokenStream>,
+    content: Option<proc_macro2::TokenStream>,
+    font_bytes: Option<proc_macro2::TokenStream>,
+    font_size: Option<proc_macro2::TokenStream>,
+    max_width: Option<proc_macro2::TokenStream>,
+    max_height: Option<proc_macro2::TokenStream>,
+    text_wrap: Option<proc_macro2::TokenStream>,
+    text_overflow: Option<proc_macro2::TokenStream>,
+    text_alignment: Option<proc_macro2::TokenStream>,
 }
 
 impl ElementProperties {
@@ -130,6 +188,14 @@ impl ElementProperties {
                 "horizontal_alignment" => &mut properties.horizontal_alignment,
                 "color" | "background_color" => &mut properties.background_color,
                 "border_radius" => &mut properties.border_radius,
+                "content" => &mut properties.content,
+                "font_bytes" => &mut properties.font_bytes,
+                "font_size" => &mut properties.font_size,
+                "max_width" => &mut properties.max_width,
+                "max_height" => &mut properties.max_height,
+                "text_wrap" => &mut properties.text_wrap,
+                "text_overflow" => &mut properties.text_overflow,
+                "text_alignment" => &mut properties.text_alignment,
                 other => {
                     return Err(syn::Error::new(
                         proc_macro2::Span::call_site(),
@@ -242,6 +308,87 @@ fn expand_rect(
                 #(#fields,)*
                 ..Default::default()
             }
+        }
+    }
+}
+
+fn expand_text(
+    properties: ElementProperties,
+    children: Vec<proc_macro2::TokenStream>,
+    text_content: Option<proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
+    if !children.is_empty() {
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "Text elements cannot contain child elements; use the `content` property",
+        )
+        .to_compile_error();
+    }
+
+    if properties.content.is_some() && text_content.is_some() {
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "Specify Text content either as a `content` property or as body text, not both",
+        )
+        .to_compile_error();
+    }
+
+    let Some(content) = properties.content.or(text_content) else {
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "Text elements require a string literal body or a `content` property",
+        )
+        .to_compile_error();
+    };
+
+    let mut fields = Vec::new();
+    if let Some(value) = properties.background_color {
+        fields.push(quote! { color: Some(#value) });
+    }
+    if let Some(value) = properties.font_bytes {
+        fields.push(quote! { font_bytes: #value });
+    }
+    if let Some(value) = properties.font_size {
+        fields.push(quote! { font_size: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.max_width {
+        fields.push(quote! { max_width: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.max_height {
+        fields.push(quote! { max_height: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.text_wrap {
+        fields.push(quote! { text_wrap: Some(#value) });
+    }
+    if let Some(value) = properties.text_overflow {
+        fields.push(quote! { text_overflow: Some(#value) });
+    }
+    if let Some(value) = properties.position {
+        fields.push(quote! { position: Some(#value) });
+    }
+    if let Some(value) = properties.x {
+        fields.push(quote! { x: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.y {
+        fields.push(quote! { y: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.vertical_alignment {
+        fields.push(quote! { vertical_alignment: Some(#value) });
+    }
+    if let Some(value) = properties.horizontal_alignment {
+        fields.push(quote! { horizontal_alignment: Some(#value) });
+    }
+    if let Some(value) = properties.text_alignment {
+        fields.push(quote! { text_alignment: Some(#value) });
+    }
+
+    quote! {
+        skia_engine_core::ElementNode::Text {
+            props: skia_engine_core::nodes::text::Props {
+                #(#fields,)*
+                ..Default::default()
+            },
+            content: #content,
         }
     }
 }

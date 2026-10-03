@@ -7,7 +7,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/dip-land/skia-engine"
@@ -19,11 +19,11 @@ categories = ["graphics", "rendering::graphics-api", "multimedia::images"]
 exclude = [ "*.png" ]
 
 [workspace.dependencies]
-skia-engine-core = { version = "0.1.0", path = "crates/core" }
-skia-engine-macro = { version = "0.1.0", path = "crates/macro" }
+skia-engine-core = { version = "0.2", path = "crates/core" }
+skia-engine-macro = { version = "0.2", path = "crates/macro" }
 
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "3.0", features = ["full", "extra-traits"] }
 syn-rsx = "0.9.0"
-skia-safe = "0.153.3"
+skia-safe = { version = "0.153.3", features = ["textlayout"] }

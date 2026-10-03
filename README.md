@@ -4,13 +4,15 @@ A Rust UI and 2D drawing library built on [Skia](https://skia.org/). It provides
 a small element tree, a renderer, and procedural macros for declaring nested
 elements.
 
+**ANY AND ALL PRs ARE WELCOME**
+
 ## Crates
 
-| Crate | Purpose |
-|---|---|
-| [`skia-engine`](crates/engine) | Public facade that re-exports the element tree, renderer, and macros. |
-| [`skia-engine-core`](crates/core) | Element types, layout properties, and Skia rendering implementation. |
-| [`skia-engine-macro`](crates/macro) | `skia_ui!` and `skia_rsx!` procedural macros. |
+| Crate                               | Purpose                                                               |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| [`skia-engine`](crates/engine)      | Public facade that re-exports the element tree, renderer, and macros. |
+| [`skia-engine-core`](crates/core)   | Element types, layout properties, and Skia rendering implementation.  |
+| [`skia-engine-macro`](crates/macro) | `skia_ui!` and `skia_rsx!` procedural macros.                         |
 
 ## Getting started
 

@@ -1,5 +1,6 @@
 pub mod container;
 pub mod rect;
+pub mod text;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Position {
@@ -19,4 +20,19 @@ pub enum HorizontalAlignment {
     Left,
     Center,
     Right,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TextAlignment {
+    Baseline,
+    Top,
+    Middle,
+    Bottom,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TextOverflow {
+    Visible,
+    Clip,
+    Ellipsis,
 }

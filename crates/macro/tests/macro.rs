@@ -210,3 +210,108 @@ fn test_skia_rsx_all_properties() {
     assert_eq!(props.background_color, Color::RED);
     assert_eq!(props.border_radius, Some(3.0));
 }
+
+#[test]
+fn test_skia_ui_text_node() {
+    let node: ElementNode = skia_ui! {
+        Text {
+            content: "Wrapped text",
+            color: Color::BLACK,
+            font_size: 18.0,
+            max_width: 120.0,
+            max_height: 48.0,
+            text_wrap: true,
+            text_overflow: skia_engine_core::nodes::TextOverflow::Ellipsis,
+            position: skia_engine_core::nodes::Position::Relative,
+            x: 8.0,
+            y: 12.0,
+            vertical_alignment: skia_engine_core::nodes::VerticalAlignment::Top,
+            horizontal_alignment: skia_engine_core::nodes::HorizontalAlignment::Left,
+            text_alignment: skia_engine_core::nodes::TextAlignment::Middle,
+        }
+    };
+
+    let ElementNode::Text { props, content } = node else {
+        panic!("Expected an ElementNode::Text variant");
+    };
+    assert_eq!(content, "Wrapped text");
+    assert_eq!(props.color, Some(Color::BLACK));
+    assert_eq!(props.font_size, Some(18.0));
+    assert_eq!(props.max_width, Some(120.0));
+    assert_eq!(props.max_height, Some(48.0));
+    assert_eq!(props.text_wrap, Some(true));
+    assert!(matches!(
+        props.text_overflow,
+        Some(skia_engine_core::nodes::TextOverflow::Ellipsis)
+    ));
+    assert!(matches!(
+        props.position,
+        Some(skia_engine_core::nodes::Position::Relative)
+    ));
+    assert_eq!(props.x, Some(8.0));
+    assert_eq!(props.y, Some(12.0));
+    assert!(matches!(
+        props.vertical_alignment,
+        Some(skia_engine_core::nodes::VerticalAlignment::Top)
+    ));
+    assert!(matches!(
+        props.horizontal_alignment,
+        Some(skia_engine_core::nodes::HorizontalAlignment::Left)
+    ));
+    assert!(matches!(
+        props.text_alignment,
+        Some(skia_engine_core::nodes::TextAlignment::Middle)
+    ));
+}
+
+#[test]
+fn test_skia_rsx_text_node() {
+    let node: ElementNode = skia_rsx! {
+        <Text
+            color=Color::BLACK
+            font_size={18.0}
+            max_width={120.0}
+            max_height={48.0}
+            text_wrap=true
+            text_overflow=skia_engine_core::nodes::TextOverflow::Clip
+            position=skia_engine_core::nodes::Position::Relative
+            x={8.0}
+            y={12.0}
+            vertical_alignment=skia_engine_core::nodes::VerticalAlignment::Top
+            horizontal_alignment=skia_engine_core::nodes::HorizontalAlignment::Left
+            text_alignment=skia_engine_core::nodes::TextAlignment::Bottom
+        >"Wrapped text"</Text>
+    };
+
+    let ElementNode::Text { props, content } = node else {
+        panic!("Expected an ElementNode::Text variant");
+    };
+    assert_eq!(content, "Wrapped text");
+    assert_eq!(props.color, Some(Color::BLACK));
+    assert_eq!(props.font_size, Some(18.0));
+    assert_eq!(props.max_width, Some(120.0));
+    assert_eq!(props.max_height, Some(48.0));
+    assert_eq!(props.text_wrap, Some(true));
+    assert!(matches!(
+        props.text_overflow,
+        Some(skia_engine_core::nodes::TextOverflow::Clip)
+    ));
+    assert!(matches!(
+        props.position,
+        Some(skia_engine_core::nodes::Position::Relative)
+    ));
+    assert_eq!(props.x, Some(8.0));
+    assert_eq!(props.y, Some(12.0));
+    assert!(matches!(
+        props.vertical_alignment,
+        Some(skia_engine_core::nodes::VerticalAlignment::Top)
+    ));
+    assert!(matches!(
+        props.horizontal_alignment,
+        Some(skia_engine_core::nodes::HorizontalAlignment::Left)
+    ));
+    assert!(matches!(
+        props.text_alignment,
+        Some(skia_engine_core::nodes::TextAlignment::Bottom)
+    ));
+}

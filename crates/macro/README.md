@@ -43,23 +43,60 @@ let tree = skia_rsx! {
 
 ## Supported elements and properties
 
-The supported elements are `Container` and `Rect`. Both macros accept these
-properties:
+The supported elements are `Container`, `Rect`, and `Text`. `Container` and
+`Rect` accept these properties:
 
-| Property | Container | Rect |
-|---|---|---|
-| `width`, `height` | Optional `f32` values | `f32` values |
-| `position` | `nodes::Position` | `nodes::Position` |
-| `x`, `y` | Optional `f32` values | Optional `f32` values |
-| `vertical_alignment` | `nodes::VerticalAlignment` | `nodes::VerticalAlignment` |
+| Property               | Container                    | Rect                         |
+| ---------------------- | ---------------------------- | ---------------------------- |
+| `width`, `height`      | Optional `f32` values        | `f32` values                 |
+| `position`             | `nodes::Position`            | `nodes::Position`            |
+| `x`, `y`               | Optional `f32` values        | Optional `f32` values        |
+| `vertical_alignment`   | `nodes::VerticalAlignment`   | `nodes::VerticalAlignment`   |
 | `horizontal_alignment` | `nodes::HorizontalAlignment` | `nodes::HorizontalAlignment` |
-| `background_color` | Optional `skia_safe::Color` | `skia_safe::Color` |
-| `border_radius` | Optional `f32` value | Optional `f32` value |
+| `background_color`     | Optional `skia_safe::Color`  | `skia_safe::Color`           |
+| `border_radius`        | Optional `f32` value         | Optional `f32` value         |
 
 `color` is also accepted as an alias for `background_color`. Containers may have
 nested elements; `Rect` cannot have children. Omitted properties use each
 element's `Default` values (rectangle dimensions default to `0.0` in the macro).
 Unknown tags and properties produce compile errors.
+
+`Text` elements are also supported. They require a `content` string literal and
+accept `color` (or `background_color`), `font_bytes` (`Vec<u8>`), `font_size`,
+`max_width`, `max_height`, `text_wrap`, `text_overflow`,
+`vertical_alignment`, `horizontal_alignment`, `text_alignment`, `position`,
+`x`, and `y`. For example:
+
+```rust
+use skia_engine_macro::skia_ui;
+use skia_safe::Color;
+
+let label = skia_ui! {
+    Text {
+        content: "A long label that can wrap",
+        color: Color::BLACK,
+        font_size: 18.0,
+        max_width: 160.0,
+        text_wrap: true,
+        text_overflow: skia_engine_core::nodes::TextOverflow::Ellipsis,
+    }
+};
+```
+
+`Text` is a leaf element; put its contents in `content` rather than nesting
+child elements inside it. With `skia_rsx!`, string literal body text can be used
+instead of a `content` attribute:
+
+```rust
+let label = skia_rsx! {
+    <Text font_size={18.0}> "Hello, world!" </Text>
+};
+```
+
+RSX text must be quoted, as required by `syn-rsx`; unquoted HTML-style text is
+not supported. Specify content either in the body or with the `content`
+attribute, not both. Font bytes default to the font bundled with
+`skia-engine-core`; provide `font_bytes` to use another font.
 
 ## Dependency note
 

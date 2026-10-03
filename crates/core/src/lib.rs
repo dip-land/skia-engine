@@ -9,4 +9,8 @@ pub enum ElementNode {
     Rect {
         props: nodes::rect::Props,
     },
+    Text {
+        props: nodes::text::Props,
+        content: &'static str,
+    },
 }
