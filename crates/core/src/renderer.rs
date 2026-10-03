@@ -9,5 +9,8 @@ pub fn render_tree(canvas: &Canvas, parent_node: Option<&ElementNode>, node: &El
         ElementNode::Rect { props } => {
             nodes::rect::render(canvas, parent_node, props);
         }
+        ElementNode::Text { props, content } => {
+            nodes::text::render(canvas, parent_node, props, content);
+        }
     }
 }
