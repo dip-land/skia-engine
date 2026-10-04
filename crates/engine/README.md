@@ -32,7 +32,7 @@ dependencies. The macros currently expand to paths in `skia_engine_core`, so
 applications using the macros also need `skia-engine-core` as a direct
 dependency.
 
-## JSX-like syntax with `skia_rsx!`
+## RSX-like syntax with `skia_rsx!`
 
 Use `skia_rsx!` when you prefer tag-based syntax. Put Rust expressions in
 attribute values (braces are supported), and nest child elements inside their
@@ -58,6 +58,6 @@ property list and defaults.
 - `ElementNode` and `nodes` for constructing or inspecting element trees.
 - `render_tree` for drawing an element tree to a Skia canvas.
 - `skia_ui!` for brace-based nested element syntax.
-- `skia_rsx!` for JSX-like element syntax.
+- `skia_rsx!` for RSX-like element syntax.
 
 See the `skia-engine-macro` crate README for supported elements and properties.

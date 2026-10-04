@@ -27,7 +27,7 @@ let tree = skia_ui! {
 
 ## `skia_rsx!`
 
-Use JSX-like tags. Attribute values may be Rust expressions, commonly enclosed
+Use RSX-like tags. Attribute values may be Rust expressions, commonly enclosed
 in braces:
 
 ```rust

@@ -5,22 +5,48 @@ use crate::{
 };
 use skia_safe::{Canvas, Color, Paint, Rect as SkiaRect};
 
+/// Properties that control a container's size, placement, appearance, and
+/// alignment of its children.
+///
+/// A container can draw an optional background and always renders its child
+/// elements. Child positions and alignment are resolved relative to this
+/// container when it is their parent.
 pub struct Props {
+    /// Container width in pixels. When absent, defaults to `10.0`.
     pub width: Option<f32>,
+    /// Container height in pixels. When absent, defaults to `10.0`.
     pub height: Option<f32>,
 
+    /// Whether this container's position is relative to its parent or absolute.
+    ///
+    /// For child containers, `Relative` adds the parent's origin to `x` and
+    /// `y`. `Absolute` uses those coordinates directly. Defaults to
+    /// [`Position::Absolute`].
     pub position: Option<Position>,
+    /// Horizontal position in pixels. When absent, defaults to `0.0`.
     pub x: Option<f32>,
+    /// Vertical position in pixels. When absent, defaults to `0.0`.
     pub y: Option<f32>,
 
+    /// Vertical placement of this container within its parent, when present.
+    ///
+    /// For child containers this takes precedence over `y` and `position`.
     pub vertical_alignment: Option<VerticalAlignment>,
+    /// Horizontal placement of this container within its parent, when present.
+    ///
+    /// For child containers this takes precedence over `x` and `position`.
     pub horizontal_alignment: Option<HorizontalAlignment>,
 
+    /// Optional fill color. If `None`, no background is drawn.
     pub background_color: Option<Color>,
+    /// Optional corner radius in pixels for the background.
     pub border_radius: Option<f32>,
 }
 
 impl Default for Props {
+    /// Creates a 10-by-10 container at the origin, positioned absolutely and
+    /// centered within its parent when rendered as a child. The background and
+    /// border radius are unset.
     fn default() -> Self {
         Self {
             width: Some(10.0),
@@ -36,6 +62,23 @@ impl Default for Props {
     }
 }
 
+/// Draws a container's background, if configured, and recursively renders its
+/// children.
+///
+/// A child container's relative coordinates are offset by the parent's
+/// coordinates. If either alignment is set, that axis is instead aligned to
+/// the parent and its explicit coordinate is ignored. For a root container,
+/// coordinates are used without parent-relative positioning or alignment.
+///
+/// The background is drawn before the children, so children appear on top.
+///
+/// # Arguments
+///
+/// * `canvas` - Skia canvas to draw into.
+/// * `parent_node` - Parent element, if this container is nested in a tree.
+/// * `node` - The container element, passed to child rendering as their parent.
+/// * `props` - Size, placement, and appearance properties for this container.
+/// * `children` - Elements to render inside this container.
 pub fn render(
     canvas: &Canvas,
     parent_node: Option<&ElementNode>,

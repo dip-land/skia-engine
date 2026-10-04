@@ -21,7 +21,7 @@ reqwest = { version = "0.13.5", features = ["blocking"], optional = true }
 ureq = { version = "3.4.2", optional = true }
 
 [features]
-default = ["ureq"]
+default = []
 # Use reqwest as the HTTP client for fetching images with the image Node
 reqwest = ["dep:reqwest"]
 # Use ureq as the HTTP client for fetching images with the image Node

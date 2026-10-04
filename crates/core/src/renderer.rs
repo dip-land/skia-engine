@@ -1,6 +1,17 @@
 use crate::{ElementNode, nodes};
 use skia_safe::Canvas;
 
+/// Renders one element and, for containers, recursively renders its children.
+///
+/// Call this with `parent_node` set to `None` for the root element. Container
+/// rendering passes itself as the parent when rendering each child, allowing
+/// child positioning and alignment to use the parent container's bounds.
+///
+/// # Arguments
+///
+/// * `canvas` - Skia canvas to draw into.
+/// * `parent_node` - Parent element, or `None` for the root.
+/// * `node` - Element to render.
 pub fn render_tree(canvas: &Canvas, parent_node: Option<&ElementNode>, node: &ElementNode) {
     match node {
         ElementNode::Container { props, children } => {

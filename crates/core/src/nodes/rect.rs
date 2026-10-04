@@ -4,22 +4,41 @@ use crate::{
 };
 use skia_safe::{Canvas, Color, Paint, Rect as SkiaRect};
 
+/// Properties that control a rectangle's size, placement, and appearance.
 pub struct Props {
+    /// Rectangle width in pixels.
     pub width: f32,
+    /// Rectangle height in pixels.
     pub height: f32,
 
+    /// Positioning mode relative to the parent container.
     pub position: Option<Position>,
+    /// Horizontal position in pixels; defaults to `0.0`.
     pub x: Option<f32>,
+    /// Vertical position in pixels; defaults to `0.0`.
     pub y: Option<f32>,
 
+    /// Optional vertical alignment within the parent container.
+    ///
+    /// When set for a child, this takes precedence over `y` and the vertical
+    /// positioning mode.
     pub vertical_alignment: Option<VerticalAlignment>,
+    /// Optional horizontal alignment within the parent container.
+    ///
+    /// When set for a child, this takes precedence over `x` and the horizontal
+    /// positioning mode.
     pub horizontal_alignment: Option<HorizontalAlignment>,
 
+    /// Fill color of the rectangle.
     pub background_color: Color,
+    /// Optional corner radius in pixels. When absent, the rectangle has square
+    /// corners.
     pub border_radius: Option<f32>,
 }
 
 impl Default for Props {
+    /// Creates a 10-by-10 black rectangle at the origin, with absolute
+    /// positioning and centered alignment defaults for use as a child.
     fn default() -> Self {
         Self {
             width: 10.0,
@@ -35,6 +54,17 @@ impl Default for Props {
     }
 }
 
+/// Draws a rectangle, using a rounded rectangle when `border_radius` is set.
+///
+/// For a child of a container, relative positioning adds the parent's origin.
+/// A configured alignment replaces the computed coordinate on that axis.
+/// Root rectangles use their coordinates directly.
+///
+/// # Arguments
+///
+/// * `canvas` - Skia canvas to draw into.
+/// * `parent_node` - Parent element, if this rectangle is nested in a tree.
+/// * `props` - Size, placement, and appearance properties.
 pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props) {
     let (parent_x, parent_y, parent_width, parent_height) = match parent_node {
         Some(ElementNode::Container { props, .. }) => (
