@@ -124,8 +124,7 @@ pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props,
         position,
         props.horizontal_alignment,
         props.vertical_alignment,
-        props.x.unwrap_or(0.0),
-        props.y.unwrap_or(0.0),
+        (props.x.unwrap_or(0.0), props.y.unwrap_or(0.0)),
         box_width,
         box_height,
     );
@@ -164,11 +163,11 @@ fn layout_origin(
     position: Position,
     horizontal_alignment: Option<HorizontalAlignment>,
     vertical_alignment: Option<VerticalAlignment>,
-    x: f32,
-    y: f32,
+    coords: (f32, f32),
     width: f32,
     height: f32,
 ) -> (f32, f32) {
+    let (x, y) = coords;
     let Some((parent_x, parent_y, parent_width, parent_height)) = parent else {
         return (x, y);
     };

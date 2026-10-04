@@ -1,4 +1,5 @@
 pub mod container;
+pub mod image;
 pub mod rect;
 pub mod text;
 
@@ -36,3 +37,5 @@ pub enum TextOverflow {
     Clip,
     Ellipsis,
 }
+
+pub use skia_safe::SamplingOptions;

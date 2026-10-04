@@ -53,12 +53,9 @@ pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props)
     // keep the position relative to the parent if it's a child
     let position = props.position.unwrap_or(Position::Absolute);
     if parent_node.is_some() {
-        match position {
-            Position::Relative => {
-                x += parent_x;
-                y += parent_y;
-            }
-            _ => {}
+        if let Position::Relative = position {
+            x += parent_x;
+            y += parent_y;
         }
 
         // overwrite Y if VerticalAlignment is set

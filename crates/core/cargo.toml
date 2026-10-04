@@ -16,3 +16,15 @@ exclude.workspace = true
 
 [dependencies]
 skia-safe = { workspace = true }
+hyper = { version = "1.11.1", optional = true }
+reqwest = { version = "0.13.5", features = ["blocking"], optional = true }
+ureq = { version = "3.4.2", optional = true }
+
+[features]
+default = ["ureq"]
+# Use reqwest as the HTTP client for fetching images with the image Node
+reqwest = ["dep:reqwest"]
+# Use ureq as the HTTP client for fetching images with the image Node
+ureq = ["dep:ureq"]
+# Throw errors when fetching images with the image Node (useful for debugging)
+enable-image-errors = []
