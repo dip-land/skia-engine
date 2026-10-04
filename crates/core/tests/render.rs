@@ -1,115 +1,168 @@
-use skia_engine_core::{
-    ElementNode, nodes,
-    nodes::{HorizontalAlignment, TextAlignment, TextOverflow, VerticalAlignment},
-    renderer::render_tree,
-};
-use skia_safe::{EncodedImageFormat, surfaces};
+use std::{fs, path::PathBuf};
+
+use skia_engine_core::{ElementNode, nodes, renderer::render_tree};
+use skia_safe::{Color, EncodedImageFormat, Surface, surfaces};
+
+fn surface() -> Surface {
+    let mut surface = surfaces::raster_n32_premul((640, 480)).unwrap();
+    surface.canvas().clear(Color::BLACK);
+    surface
+}
+
+fn assert_pixel(surface: &mut Surface, x: i32, y: i32, expected: Color) {
+    let pixels = surface.peek_pixels().expect("surface should expose pixels");
+    assert_eq!(pixels.get_color((x, y)), expected);
+}
+
+fn save_png(surface: &mut Surface, filename: &str) {
+    let output_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/core-rendered-tests");
+    fs::create_dir_all(&output_dir).expect("create PNG output directory");
+
+    let data = surface
+        .image_snapshot()
+        .encode(None, EncodedImageFormat::PNG, 100)
+        .expect("encode rendered surface as PNG");
+    let path = output_dir.join(filename);
+    fs::write(&path, data.as_bytes()).expect("write rendered PNG");
+    eprintln!("Rendered test image: {}", path.display());
+}
 
 #[test]
-fn render_to_image() {
-    let root_node = ElementNode::Container {
+fn constructs_each_element_node_variant() {
+    let container = ElementNode::Container {
+        props: nodes::container::Props::default(),
+        children: vec![],
+    };
+    let image = ElementNode::Image {
+        props: nodes::image::Props::default(),
+    };
+    let rect = ElementNode::Rect {
+        props: nodes::rect::Props::default(),
+    };
+    let text = ElementNode::Text {
+        props: nodes::text::Props::default(),
+        content: "Hello",
+    };
+
+    assert!(matches!(container, ElementNode::Container { .. }));
+    assert!(matches!(image, ElementNode::Image { .. }));
+    assert!(matches!(rect, ElementNode::Rect { .. }));
+    assert!(matches!(
+        text,
+        ElementNode::Text {
+            content: "Hello",
+            ..
+        }
+    ));
+}
+
+#[test]
+fn renders_container_background_and_children() {
+    let tree = ElementNode::Container {
         props: nodes::container::Props {
             width: Some(400.0),
             height: Some(300.0),
-            background_color: Some(skia_safe::Color::WHITE),
+            x: Some(20.0),
+            y: Some(20.0),
+            vertical_alignment: None,
+            horizontal_alignment: None,
+            background_color: Some(Color::BLUE),
             ..Default::default()
         },
         children: vec![ElementNode::Rect {
             props: nodes::rect::Props {
                 width: 100.0,
-                height: 100.0,
-                background_color: skia_safe::Color::BLUE,
+                height: 70.0,
+                position: Some(nodes::Position::Relative),
+                x: Some(80.0),
+                y: Some(60.0),
+                vertical_alignment: None,
+                horizontal_alignment: None,
+                background_color: Color::RED,
                 ..Default::default()
             },
         }],
     };
+    let mut surface = surface();
 
-    let mut surface = surfaces::raster_n32_premul((400, 300)).unwrap();
-    let canvas = surface.canvas();
+    render_tree(surface.canvas(), None, &tree);
+    save_png(&mut surface, "container.png");
 
-    render_tree(canvas, None, &root_node);
-
-    let image = surface.image_snapshot();
-    let mut context = surface.direct_context();
-    let data = image
-        .encode(context.as_mut(), EncodedImageFormat::PNG, None)
-        .unwrap();
-
-    std::fs::write("render.png", data.as_bytes()).unwrap();
+    assert_pixel(&mut surface, 30, 30, Color::BLUE);
+    assert_pixel(&mut surface, 120, 100, Color::RED);
 }
 
 #[test]
-fn text_wrapping_and_overflow_modes() {
-    let parent = ElementNode::Container {
-        props: nodes::container::Props {
-            width: Some(120.0),
-            height: Some(60.0),
+fn renders_rectangle_fill() {
+    let node = ElementNode::Rect {
+        props: nodes::rect::Props {
+            width: 280.0,
+            height: 180.0,
+            x: Some(60.0),
+            y: Some(50.0),
+            vertical_alignment: None,
+            horizontal_alignment: None,
+            background_color: Color::GREEN,
             ..Default::default()
         },
-        children: vec![],
     };
-    let cases = [
-        (true, TextOverflow::Visible),
-        (true, TextOverflow::Clip),
-        (true, TextOverflow::Ellipsis),
-        (false, TextOverflow::Ellipsis),
-    ];
-    let mut surface = surfaces::raster_n32_premul((160, 100)).unwrap();
-    let canvas = surface.canvas();
+    let mut surface = surface();
 
-    for (text_wrap, text_overflow) in cases {
-        let text = ElementNode::Text {
-            props: nodes::text::Props {
-                color: Some(skia_safe::Color::BLACK),
-                max_width: Some(60.0),
-                max_height: Some(24.0),
-                text_wrap: Some(text_wrap),
-                text_overflow: Some(text_overflow),
-                horizontal_alignment: Some(HorizontalAlignment::Left),
-                vertical_alignment: Some(VerticalAlignment::Top),
-                text_alignment: Some(TextAlignment::Top),
-                ..Default::default()
-            },
-            content: "A long line of text that should wrap or overflow the text box.",
-        };
+    render_tree(surface.canvas(), None, &node);
+    save_png(&mut surface, "rect.png");
 
-        render_tree(canvas, Some(&parent), &text);
-    }
+    assert_pixel(&mut surface, 200, 150, Color::GREEN);
+    assert_pixel(&mut surface, 30, 30, Color::BLACK);
 }
 
 #[test]
-fn rendering_images() {
-    let root_node = ElementNode::Container {
-        props: nodes::container::Props {
-            width: Some(400.0),
-            height: Some(300.0),
-            background_color: Some(skia_safe::Color::WHITE),
+fn renders_image_background_without_a_source() {
+    let node = ElementNode::Image {
+        props: nodes::image::Props {
+            width: 240.0,
+            height: 180.0,
+            x: Some(100.0),
+            y: Some(100.0),
+            vertical_alignment: None,
+            horizontal_alignment: None,
+            image_src: None,
+            background_color: Some(Color::YELLOW),
             ..Default::default()
         },
-        children: vec![ElementNode::Image {
-            props: nodes::image::Props {
-                width: 100.0,
-                height: 100.0,
-                image_src: Some(
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbKXzqnplp0IkqASMkqHGHQg1A0-OiFvk89YFRDeNHYg&s=10"
-                        .to_string(),
-                ),
-                background_color: Some(skia_safe::Color::BLUE),
-                ..Default::default()
-            },
-        }],
     };
+    let mut surface = surface();
 
-    let mut surface = surfaces::raster_n32_premul((400, 300)).unwrap();
-    let canvas = surface.canvas();
+    render_tree(surface.canvas(), None, &node);
+    save_png(&mut surface, "image.png");
 
-    render_tree(canvas, None, &root_node);
+    assert_pixel(&mut surface, 220, 200, Color::YELLOW);
+    assert_pixel(&mut surface, 30, 30, Color::BLACK);
+}
 
-    let image = surface.image_snapshot();
-    let mut context = surface.direct_context();
-    let data = image
-        .encode(context.as_mut(), EncodedImageFormat::PNG, None)
-        .unwrap();
+#[test]
+fn renders_text_glyphs() {
+    let node = ElementNode::Text {
+        props: nodes::text::Props {
+            color: Some(Color::WHITE),
+            font_size: Some(72.0),
+            x: Some(40.0),
+            y: Some(80.0),
+            vertical_alignment: None,
+            horizontal_alignment: None,
+            text_alignment: Some(nodes::TextAlignment::Top),
+            ..Default::default()
+        },
+        content: "Skia",
+    };
+    let mut surface = surface();
 
-    std::fs::write("rendering_images.png", data.as_bytes()).unwrap();
+    render_tree(surface.canvas(), None, &node);
+    save_png(&mut surface, "text.png");
+
+    let pixels = surface.peek_pixels().expect("surface should expose pixels");
+    assert!(
+        (0..480).any(|y| (0..640).any(|x| pixels.get_color((x, y)) != Color::BLACK)),
+        "rendering text should change at least one pixel"
+    );
 }

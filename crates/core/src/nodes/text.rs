@@ -12,27 +12,50 @@ use skia_safe::{
 const DEFAULT_FONT: &[u8] = include_bytes!("../../fonts/Open Sans/static/OpenSans-Regular.ttf");
 const EMBEDDED_FONT_FAMILY: &str = "SkiaEngineEmbeddedFont";
 
+/// Properties that control text appearance, layout, placement, and overflow.
 pub struct Props {
+    /// Text color; defaults to white.
     pub color: Option<Color>,
+    /// Encoded font data. Defaults to the Open Sans font bundled with this
+    /// crate. Invalid font data causes rendering to panic.
     pub font_bytes: Vec<u8>,
+    /// Font size in pixels; defaults to `16.0`.
     pub font_size: Option<f32>,
 
+    /// Maximum paragraph width in pixels.
+    ///
+    /// Used as the text box width and as the width constraint when wrapping or
+    /// applying single-line ellipsis.
     pub max_width: Option<f32>,
+    /// Maximum paragraph height in pixels. Used as the text box height and to
+    /// constrain the number of lines in ellipsis mode.
     pub max_height: Option<f32>,
 
+    /// Whether text wraps at the layout width. If enabled without `max_width`,
+    /// a positive parent-container width is used when available.
     pub text_wrap: Option<bool>,
+    /// How content exceeding the text box is handled.
     pub text_overflow: Option<TextOverflow>,
 
+    /// Positioning mode relative to the parent container.
     pub position: Option<Position>,
+    /// Horizontal position in pixels; defaults to `0.0`.
     pub x: Option<f32>,
+    /// Vertical position in pixels; defaults to `0.0`.
     pub y: Option<f32>,
 
+    /// Optional vertical placement within the parent container.
     pub vertical_alignment: Option<VerticalAlignment>,
+    /// Optional horizontal placement within the parent container.
     pub horizontal_alignment: Option<HorizontalAlignment>,
+    /// Vertical placement of the paragraph within its text box.
     pub text_alignment: Option<TextAlignment>,
 }
 
 impl Default for Props {
+    /// Uses the bundled Open Sans font at 16 pixels, white text, visible
+    /// overflow, baseline text alignment, and centered placement defaults for
+    /// use as a child.
     fn default() -> Self {
         Self {
             color: Some(Color::WHITE),
@@ -52,6 +75,25 @@ impl Default for Props {
     }
 }
 
+/// Shapes and paints text on the canvas.
+///
+/// The paragraph width is constrained by `max_width`, or by the parent
+/// container's positive width when wrapping is enabled and no maximum width is
+/// supplied. Otherwise, the paragraph is laid out without a finite width.
+/// `TextOverflow::Clip` clips to the configured text box; `Ellipsis` requests
+/// an ellipsis and clips when finite bounds are available; `Visible` does not
+/// clip the paragraph. Vertical text alignment positions the laid-out
+/// paragraph inside the selected box.
+///
+/// An embedded font is registered for this paragraph before layout. Font
+/// loading errors panic.
+///
+/// # Arguments
+///
+/// * `canvas` - Skia canvas to draw into.
+/// * `parent_node` - Parent element, if this text node is nested in a tree.
+/// * `props` - Font, layout, placement, color, and overflow properties.
+/// * `content` - Text to shape and draw.
 pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props, content: &str) {
     let font_manager = FontMgr::new();
     let typeface = font_manager

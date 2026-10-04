@@ -1,3 +1,42 @@
+//! Procedural macros for constructing `skia-engine` element trees.
+//!
+//! [`skia_ui!`] provides a brace-based syntax, while [`skia_rsx!`] accepts
+//! RSX-like tags. Both macros produce `skia_engine_core::ElementNode` values
+//! and expect the generated code's `skia_engine_core` and `skia_safe` paths to
+//! be available to the consuming crate.
+//!
+//! Supported elements are `Container`, `Rect`, `Image`, and `Text`.
+//! Containers may contain nested elements; the other elements are leaves.
+//! Element properties use Rust expressions. `Text` content can be supplied
+//! through its `content` property, or as a quoted string literal in the RSX
+//! body.
+//!
+//! # Brace syntax
+//!
+//! ```ignore
+//! skia_ui! {
+//!     Container {
+//!         width: 320.0,
+//!         height: 180.0,
+//!         background_color: skia_safe::Color::WHITE,
+//!         Rect {
+//!             width: 80.0,
+//!             height: 60.0,
+//!             color: skia_safe::Color::BLUE,
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! # RSX syntax
+//!
+//! ```ignore
+//! skia_rsx! {
+//!     <Container width={320.0} height={180.0}>
+//!         <Text font_size={24.0}>{"Hello, Skia!"}</Text>
+//!     </Container>
+//! }
+//! ```
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
@@ -5,17 +44,52 @@ use syn_rsx::parse2;
 
 mod parser;
 
+/// A normalized element property used by both macro syntaxes.
 struct AttributeTokens {
+    /// Property identifier as written in the invocation.
     name: String,
+    /// Rust expression to use as the property's value.
     value: proc_macro2::TokenStream,
 }
 
+/// Builds an `ElementNode` tree using nested Rust-like brace syntax.
+///
+/// Each element is written as `Tag { ... }`. Properties use `name: expression`
+/// syntax and nested elements are written directly inside their parent's
+/// braces. Separate entries with commas. `Container` accepts children;
+/// `Rect`, `Image`, and `Text` do not. Text content is provided with the
+/// `content` property.
+///
+/// Supported tags are `Container`, `Rect`, `Image`, and `Text`. Supported
+/// properties are validated at compile time; an unknown tag or property, or an
+/// invalid element structure, produces a compile error.
+///
+/// The expansion refers to `skia_engine_core::ElementNode` and, for the
+/// default rectangle color, `skia_safe::Color::BLACK`. Those crate paths must
+/// be available in the consuming crate.
+///
+/// # Example
+///
+/// ```ignore
+/// let tree = skia_ui! {
+///     Container {
+///         width: 200.0,
+///         height: 100.0,
+///         Rect {
+///             width: 50.0,
+///             height: 50.0,
+///             color: skia_safe::Color::GREEN,
+///         }
+///     }
+/// };
+/// ```
 #[proc_macro]
 pub fn skia_ui(input: TokenStream) -> TokenStream {
     let root = parse_macro_input!(input as parser::SkiaNodeInput);
     expand_skia_ui_node(&root).into()
 }
 
+/// Recursively converts a parsed brace-syntax node into an element expression.
 fn expand_skia_ui_node(node: &parser::SkiaNodeInput) -> proc_macro2::TokenStream {
     let attributes = node.attributes.iter().map(|attribute| {
         let value = &attribute.value;
@@ -29,6 +103,32 @@ fn expand_skia_ui_node(node: &parser::SkiaNodeInput) -> proc_macro2::TokenStream
     expand_element(&node.tag_name.to_string(), attributes, children, None)
 }
 
+/// Builds an `ElementNode` tree using RSX-like tag syntax.
+///
+/// Attribute values may be Rust expressions in braces, such as
+/// `width={200.0}`, or Rust paths/identifiers where accepted by the RSX parser.
+/// Container tags may nest other elements. `Rect`, `Image`, and `Text` are
+/// leaves. Text content must be a string literal body (for example,
+/// `<Text>{"Hello"}</Text>`) or supplied with the `content` property, but not
+/// both.
+///
+/// Exactly one root element is required. Unknown tags and properties,
+/// valueless attributes, invalid children, and invalid text bodies produce
+/// compile-time errors.
+///
+/// The expansion refers to `skia_engine_core::ElementNode` and, for the
+/// default rectangle color, `skia_safe::Color::BLACK`. Those crate paths must
+/// be available in the consuming crate.
+///
+/// # Example
+///
+/// ```ignore
+/// let tree = skia_rsx! {
+///     <Container width={200.0} height={100.0}>
+///         <Text font_size={20.0}>{"Hello"}</Text>
+///     </Container>
+/// };
+/// ```
 #[proc_macro]
 pub fn skia_rsx(input: TokenStream) -> TokenStream {
     let nodes = match parse2(input.into()) {
@@ -50,6 +150,8 @@ pub fn skia_rsx(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Expands a parsed RSX node, collecting its properties, element children, and
+/// (for `Text`) literal body content.
 fn expand_skia_rsx_node(node: &syn_rsx::Node) -> proc_macro2::TokenStream {
     let syn_rsx::Node::Element(element) = node else {
         return quote! {};
@@ -95,6 +197,8 @@ fn expand_skia_rsx_node(node: &syn_rsx::Node) -> proc_macro2::TokenStream {
     )
 }
 
+/// Validates common element properties and dispatches to the tag-specific
+/// element expander.
 fn expand_element(
     tag_name: &str,
     attributes: impl IntoIterator<Item = AttributeTokens>,
@@ -119,6 +223,10 @@ fn expand_element(
     }
 }
 
+/// Concatenates literal text children for an RSX `Text` element.
+///
+/// Comments are ignored. Non-string text expressions and child elements are
+/// rejected, since this macro only supports literal text content.
 fn extract_text_content(
     children: &[syn_rsx::Node],
 ) -> syn::Result<Option<proc_macro2::TokenStream>> {
@@ -153,6 +261,10 @@ fn extract_text_content(
     }))
 }
 
+/// Parsed property values shared by the supported element expanders.
+///
+/// Values remain token streams until an expander emits them in the generated
+/// `Props` initializer, preserving Rust expression semantics.
 #[derive(Default)]
 struct ElementProperties {
     width: Option<proc_macro2::TokenStream>,
@@ -177,6 +289,7 @@ struct ElementProperties {
 }
 
 impl ElementProperties {
+    /// Maps property names to their internal slots, rejecting unknown names.
     fn parse(attributes: impl IntoIterator<Item = AttributeTokens>) -> syn::Result<Self> {
         let mut properties = Self::default();
 
@@ -215,6 +328,7 @@ impl ElementProperties {
     }
 }
 
+/// Emits a container node with recursively expanded children.
 fn expand_container(
     properties: ElementProperties,
     children: Vec<proc_macro2::TokenStream>,
@@ -260,6 +374,7 @@ fn expand_container(
     }
 }
 
+/// Emits a leaf rectangle node, rejecting any element children.
 fn expand_rect(
     properties: ElementProperties,
     children: Vec<proc_macro2::TokenStream>,
@@ -317,6 +432,7 @@ fn expand_rect(
     }
 }
 
+/// Emits a leaf image node, rejecting any element children.
 fn expand_image(
     properties: ElementProperties,
     children: Vec<proc_macro2::TokenStream>,
@@ -374,6 +490,7 @@ fn expand_image(
     }
 }
 
+/// Emits a leaf text node after validating its content source and properties.
 fn expand_text(
     properties: ElementProperties,
     children: Vec<proc_macro2::TokenStream>,

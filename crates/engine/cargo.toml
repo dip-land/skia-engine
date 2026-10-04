@@ -20,7 +20,7 @@ skia-engine-macro = { workspace = true }
 
 
 [features]
-default = ["skia-engine-core/ureq"]
+default = []
 # Use reqwest as the HTTP client for fetching images with the image Node
 reqwest = ["skia-engine-core/reqwest"]
 # Use ureq as the HTTP client for fetching images with the image Node

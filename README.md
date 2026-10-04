@@ -50,7 +50,7 @@ let mut surface = surfaces::raster_n32_premul((400, 300)).unwrap();
 render_tree(surface.canvas(), None, &tree);
 ```
 
-Alternatively, use `skia_rsx!` for JSX-like syntax:
+Alternatively, use `skia_rsx!` for an RSX-like syntax:
 
 ```rust
 use skia_engine::{ElementNode, skia_rsx};

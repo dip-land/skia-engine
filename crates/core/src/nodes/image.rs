@@ -4,24 +4,50 @@ use crate::{
 };
 use skia_safe::{Canvas, Color, Data, Image, Paint, RRect, Rect as SkiaRect, SamplingOptions};
 
+/// Properties that control an image node's size, placement, source, and
+/// appearance.
 pub struct Props {
+    /// Display width in pixels.
     pub width: f32,
+    /// Display height in pixels.
     pub height: f32,
 
+    /// Positioning mode relative to the parent container.
     pub position: Option<Position>,
+    /// Horizontal position in pixels; defaults to `0.0`.
     pub x: Option<f32>,
+    /// Vertical position in pixels; defaults to `0.0`.
     pub y: Option<f32>,
 
+    /// Optional vertical alignment within the parent container.
+    ///
+    /// When set for a child, this takes precedence over `y` and the vertical
+    /// positioning mode.
     pub vertical_alignment: Option<VerticalAlignment>,
+    /// Optional horizontal alignment within the parent container.
+    ///
+    /// When set for a child, this takes precedence over `x` and the horizontal
+    /// positioning mode.
     pub horizontal_alignment: Option<HorizontalAlignment>,
 
+    /// Path to an encoded image file or an HTTP(S) URL.
+    ///
+    /// URL loading requires exactly one of the `reqwest` or `ureq` crate
+    /// features. Local file paths do not require an HTTP feature.
     pub image_src: Option<String>,
+    /// Skia sampling configuration used when scaling the image.
     pub image_sampling: Option<SamplingOptions>,
+    /// Optional color applied to the rounded backing shape drawn under the
+    /// image.
     pub background_color: Option<Color>,
+    /// Optional corner radius in pixels. The image is clipped to this rounded
+    /// shape when it is set.
     pub border_radius: Option<f32>,
 }
 
 impl Default for Props {
+    /// Creates a 10-by-10 image node at the origin with default sampling,
+    /// centered alignment defaults for use as a child, and no source.
     fn default() -> Self {
         Self {
             width: 10.0,
@@ -39,6 +65,27 @@ impl Default for Props {
     }
 }
 
+/// Loads and draws an image node.
+///
+/// The source may be a local file path or an HTTP(S) URL. Encoded image bytes
+/// are decoded by Skia, scaled to the node's bounds using `image_sampling`,
+/// and clipped to a rounded rectangle when `border_radius` is set. If no
+/// source is provided, the backing shape is still drawn.
+///
+/// HTTP loading is enabled by the crate's `reqwest` or `ureq` feature; enabling
+/// both is a compile-time error. The `enable-image-errors` feature makes
+/// loading and decoding failures explicit, which is useful when diagnosing
+/// invalid paths, failed requests, or unsupported image data.
+///
+/// For child nodes, relative positioning adds the parent container's origin.
+/// Configured horizontal or vertical alignment takes precedence over the
+/// corresponding coordinate and positioning mode.
+///
+/// # Arguments
+///
+/// * `canvas` - Skia canvas to draw into.
+/// * `parent_node` - Parent element, if this image is nested in a tree.
+/// * `props` - Size, placement, source, sampling, and appearance properties.
 pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props) {
     let (parent_x, parent_y, parent_width, parent_height) = match parent_node {
         Some(ElementNode::Container { props, .. }) => (
@@ -94,7 +141,27 @@ pub fn render(canvas: &Canvas, parent_node: Option<&ElementNode>, props: &Props)
     let image = if let Some(image_src) = props.image_src.as_deref() {
         if image_src.starts_with("http://") || image_src.starts_with("https://") {
             #[cfg(all(feature = "reqwest", feature = "ureq"))]
-            compile_error!("Only 1 http client feature can be selected!");
+            {
+                panic!("Only 1 http client feature can be selected!");
+            }
+
+            #[cfg(all(
+                not(feature = "reqwest"),
+                not(feature = "ureq"),
+                feature = "enable-image-errors"
+            ))]
+            {
+                panic!("At least one http client feature must be selected to use image URLs!");
+            }
+
+            #[cfg(all(
+                not(feature = "reqwest"),
+                not(feature = "ureq"),
+                not(feature = "enable-image-errors")
+            ))]
+            {
+                None
+            }
 
             #[cfg(all(feature = "reqwest", feature = "enable-image-errors"))]
             {
