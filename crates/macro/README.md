@@ -43,8 +43,8 @@ let tree = skia_rsx! {
 
 ## Supported elements and properties
 
-The supported elements are `Container`, `Rect`, and `Text`. `Container` and
-`Rect` accept these properties:
+The supported elements are `Container`, `Rect`, `Image`, and `Text`. `Container`
+and `Rect` accept these properties:
 
 | Property               | Container                    | Rect                         |
 | ---------------------- | ---------------------------- | ---------------------------- |
@@ -60,6 +60,25 @@ The supported elements are `Container`, `Rect`, and `Text`. `Container` and
 nested elements; `Rect` cannot have children. Omitted properties use each
 element's `Default` values (rectangle dimensions default to `0.0` in the macro).
 Unknown tags and properties produce compile errors.
+
+`Image` is a leaf element. It accepts `width`, `height`, `position`, `x`, `y`,
+`vertical_alignment`, `horizontal_alignment`, `image_src`, `image_sampling`,
+`background_color`, and `border_radius`. `image_src` is a string or string
+expression; `image_sampling` accepts a `skia_safe::SamplingOptions` value. For
+example:
+
+```rust
+use skia_engine_macro::skia_ui;
+
+let picture = skia_ui! {
+    Image {
+        image_src: "assets/photo.png",
+        width: 320.0,
+        height: 180.0,
+        border_radius: 8.0,
+    }
+};
+```
 
 `Text` elements are also supported. They require a `content` string literal and
 accept `color` (or `background_color`), `font_bytes` (`Vec<u8>`), `font_size`,

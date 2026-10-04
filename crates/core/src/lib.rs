@@ -6,6 +6,9 @@ pub enum ElementNode {
         props: nodes::container::Props,
         children: Vec<ElementNode>,
     },
+    Image {
+        props: nodes::image::Props,
+    },
     Rect {
         props: nodes::rect::Props,
     },

@@ -6,7 +6,7 @@ use skia_engine_core::{
 use skia_safe::{EncodedImageFormat, surfaces};
 
 #[test]
-fn test_render_to_image() {
+fn render_to_image() {
     let root_node = ElementNode::Container {
         props: nodes::container::Props {
             width: Some(400.0),
@@ -39,7 +39,7 @@ fn test_render_to_image() {
 }
 
 #[test]
-fn test_text_wrapping_and_overflow_modes() {
+fn text_wrapping_and_overflow_modes() {
     let parent = ElementNode::Container {
         props: nodes::container::Props {
             width: Some(120.0),
@@ -75,4 +75,41 @@ fn test_text_wrapping_and_overflow_modes() {
 
         render_tree(canvas, Some(&parent), &text);
     }
+}
+
+#[test]
+fn rendering_images() {
+    let root_node = ElementNode::Container {
+        props: nodes::container::Props {
+            width: Some(400.0),
+            height: Some(300.0),
+            background_color: Some(skia_safe::Color::WHITE),
+            ..Default::default()
+        },
+        children: vec![ElementNode::Image {
+            props: nodes::image::Props {
+                width: 100.0,
+                height: 100.0,
+                image_src: Some(
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbKXzqnplp0IkqASMkqHGHQg1A0-OiFvk89YFRDeNHYg&s=10"
+                        .to_string(),
+                ),
+                background_color: Some(skia_safe::Color::BLUE),
+                ..Default::default()
+            },
+        }],
+    };
+
+    let mut surface = surfaces::raster_n32_premul((400, 300)).unwrap();
+    let canvas = surface.canvas();
+
+    render_tree(canvas, None, &root_node);
+
+    let image = surface.image_snapshot();
+    let mut context = surface.direct_context();
+    let data = image
+        .encode(context.as_mut(), EncodedImageFormat::PNG, None)
+        .unwrap();
+
+    std::fs::write("rendering_images.png", data.as_bytes()).unwrap();
 }

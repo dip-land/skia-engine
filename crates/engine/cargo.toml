@@ -17,3 +17,13 @@ exclude.workspace = true
 [dependencies]
 skia-engine-core = { workspace = true }
 skia-engine-macro = { workspace = true }
+
+
+[features]
+default = ["skia-engine-core/ureq"]
+# Use reqwest as the HTTP client for fetching images with the image Node
+reqwest = ["skia-engine-core/reqwest"]
+# Use ureq as the HTTP client for fetching images with the image Node
+ureq = ["skia-engine-core/ureq"]
+# Throw errors when fetching images with the image Node (useful for debugging)
+enable-image-errors = ["skia-engine-core/enable-image-errors"]

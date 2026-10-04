@@ -315,3 +315,97 @@ fn test_skia_rsx_text_node() {
         Some(skia_engine_core::nodes::TextAlignment::Bottom)
     ));
 }
+
+#[test]
+fn test_skia_ui_image_node() {
+    let sampling = skia_engine_core::nodes::SamplingOptions::new(
+        skia_safe::FilterMode::Linear,
+        skia_safe::MipmapMode::None,
+    );
+    let node: ElementNode = skia_ui! {
+        Image {
+            width: 160.0,
+            height: 90.0,
+            position: skia_engine_core::nodes::Position::Relative,
+            x: 8.0,
+            y: 12.0,
+            vertical_alignment: skia_engine_core::nodes::VerticalAlignment::Top,
+            horizontal_alignment: skia_engine_core::nodes::HorizontalAlignment::Left,
+            image_src: "assets/photo.png",
+            image_sampling: sampling,
+            background_color: Color::WHITE,
+            border_radius: 6.0,
+        }
+    };
+
+    let ElementNode::Image { props } = node else {
+        panic!("Expected an ElementNode::Image variant");
+    };
+    assert_eq!(props.width, 160.0);
+    assert_eq!(props.height, 90.0);
+    assert!(matches!(
+        props.position,
+        Some(skia_engine_core::nodes::Position::Relative)
+    ));
+    assert_eq!(props.x, Some(8.0));
+    assert_eq!(props.y, Some(12.0));
+    assert!(matches!(
+        props.vertical_alignment,
+        Some(skia_engine_core::nodes::VerticalAlignment::Top)
+    ));
+    assert!(matches!(
+        props.horizontal_alignment,
+        Some(skia_engine_core::nodes::HorizontalAlignment::Left)
+    ));
+    assert_eq!(props.image_src.as_deref(), Some("assets/photo.png"));
+    assert_eq!(props.image_sampling, Some(sampling));
+    assert_eq!(props.background_color, Some(Color::WHITE));
+    assert_eq!(props.border_radius, Some(6.0));
+}
+
+#[test]
+fn test_skia_rsx_image_node() {
+    let sampling = skia_engine_core::nodes::SamplingOptions::new(
+        skia_safe::FilterMode::Linear,
+        skia_safe::MipmapMode::None,
+    );
+    let node: ElementNode = skia_rsx! {
+        <Image
+            width={160.0}
+            height={90.0}
+            position=skia_engine_core::nodes::Position::Relative
+            x={8.0}
+            y={12.0}
+            vertical_alignment=skia_engine_core::nodes::VerticalAlignment::Top
+            horizontal_alignment=skia_engine_core::nodes::HorizontalAlignment::Left
+            image_src="assets/photo.png"
+            image_sampling=sampling
+            background_color=Color::WHITE
+            border_radius={6.0}
+        />
+    };
+
+    let ElementNode::Image { props } = node else {
+        panic!("Expected an ElementNode::Image variant");
+    };
+    assert_eq!(props.width, 160.0);
+    assert_eq!(props.height, 90.0);
+    assert!(matches!(
+        props.position,
+        Some(skia_engine_core::nodes::Position::Relative)
+    ));
+    assert_eq!(props.x, Some(8.0));
+    assert_eq!(props.y, Some(12.0));
+    assert!(matches!(
+        props.vertical_alignment,
+        Some(skia_engine_core::nodes::VerticalAlignment::Top)
+    ));
+    assert!(matches!(
+        props.horizontal_alignment,
+        Some(skia_engine_core::nodes::HorizontalAlignment::Left)
+    ));
+    assert_eq!(props.image_src.as_deref(), Some("assets/photo.png"));
+    assert_eq!(props.image_sampling, Some(sampling));
+    assert_eq!(props.background_color, Some(Color::WHITE));
+    assert_eq!(props.border_radius, Some(6.0));
+}

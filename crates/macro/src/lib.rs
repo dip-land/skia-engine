@@ -109,6 +109,7 @@ fn expand_element(
     match tag_name {
         "Container" => expand_container(properties, children),
         "Rect" => expand_rect(properties, children),
+        "Image" => expand_image(properties, children),
         "Text" => expand_text(properties, children, text_content),
         _ => syn::Error::new(
             proc_macro2::Span::call_site(),
@@ -171,6 +172,8 @@ struct ElementProperties {
     text_wrap: Option<proc_macro2::TokenStream>,
     text_overflow: Option<proc_macro2::TokenStream>,
     text_alignment: Option<proc_macro2::TokenStream>,
+    image_src: Option<proc_macro2::TokenStream>,
+    image_sampling: Option<proc_macro2::TokenStream>,
 }
 
 impl ElementProperties {
@@ -196,6 +199,8 @@ impl ElementProperties {
                 "text_wrap" => &mut properties.text_wrap,
                 "text_overflow" => &mut properties.text_overflow,
                 "text_alignment" => &mut properties.text_alignment,
+                "image_src" => &mut properties.image_src,
+                "image_sampling" => &mut properties.image_sampling,
                 other => {
                     return Err(syn::Error::new(
                         proc_macro2::Span::call_site(),
@@ -305,6 +310,63 @@ fn expand_rect(
                 width: #width,
                 height: #height,
                 background_color: #background_color,
+                #(#fields,)*
+                ..Default::default()
+            }
+        }
+    }
+}
+
+fn expand_image(
+    properties: ElementProperties,
+    children: Vec<proc_macro2::TokenStream>,
+) -> proc_macro2::TokenStream {
+    if !children.is_empty() {
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "Image elements cannot contain children",
+        )
+        .to_compile_error();
+    }
+
+    let mut fields = Vec::new();
+    if let Some(value) = properties.width {
+        fields.push(quote! { width: (#value) as f32 });
+    }
+    if let Some(value) = properties.height {
+        fields.push(quote! { height: (#value) as f32 });
+    }
+    if let Some(value) = properties.position {
+        fields.push(quote! { position: Some(#value) });
+    }
+    if let Some(value) = properties.x {
+        fields.push(quote! { x: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.y {
+        fields.push(quote! { y: Some((#value) as f32) });
+    }
+    if let Some(value) = properties.vertical_alignment {
+        fields.push(quote! { vertical_alignment: Some(#value) });
+    }
+    if let Some(value) = properties.horizontal_alignment {
+        fields.push(quote! { horizontal_alignment: Some(#value) });
+    }
+    if let Some(value) = properties.image_src {
+        fields.push(quote! { image_src: Some((#value).into()) });
+    }
+    if let Some(value) = properties.image_sampling {
+        fields.push(quote! { image_sampling: Some(#value) });
+    }
+    if let Some(value) = properties.background_color {
+        fields.push(quote! { background_color: Some(#value) });
+    }
+    if let Some(value) = properties.border_radius {
+        fields.push(quote! { border_radius: Some((#value) as f32) });
+    }
+
+    quote! {
+        skia_engine_core::ElementNode::Image {
+            props: skia_engine_core::nodes::image::Props {
                 #(#fields,)*
                 ..Default::default()
             }
